@@ -29,15 +29,12 @@ pub fn security_audit_routes() -> Router<AppState> {
             "/api/security-audit/checklist",
             get(audit_handlers::get_checklist_definition),
         )
-
         // ── Per-contract audit endpoints ───────────────────────────────────
-
         // Get security score summary (for contract card badge)
         .route(
             "/api/contracts/:id/security-score",
             get(audit_handlers::get_security_score),
         )
-
         // List all historical audits for a contract
         .route(
             "/api/contracts/:id/security-audits",

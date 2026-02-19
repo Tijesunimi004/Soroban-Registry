@@ -1,6 +1,13 @@
+mod audit_handlers;
+mod audit_routes;
+mod benchmark_engine;
+mod benchmark_handlers;
+mod benchmark_routes;
+mod checklist;
+mod detector;
 mod handlers;
-mod rate_limit;
 mod routes;
+mod scoring;
 mod state;
 mod checklist;
 mod detector;

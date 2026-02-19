@@ -193,8 +193,6 @@ pub async fn list_contracts(
         ));
     }
 
-    let mut response = (StatusCode::OK, Json(paginated)).into_response();
-
     Ok(Json(PaginatedResponse::new(
         contracts, total, page, page_size,
     )))
