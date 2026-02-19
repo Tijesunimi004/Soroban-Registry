@@ -78,6 +78,16 @@ enum Commands {
         #[arg(long)]
         network: Option<String>,
     },
+
+    /// Generate documentation from contract
+    Doc {
+        /// Path to contract WASM file
+        contract_path: String,
+
+        /// Output directory
+        #[arg(long, default_value = "docs")]
+        output: String,
+    },
 }
 
 #[tokio::main]
@@ -118,6 +128,9 @@ async fn main() -> Result<()> {
         }
         Commands::List { limit, network } => {
             commands::list(&cli.api_url, limit, network.as_deref()).await?;
+        }
+        Commands::Doc { contract_path, output } => {
+            commands::doc(&contract_path, &output)?;
         }
     }
 

@@ -1,6 +1,8 @@
 use anyhow::{Context, Result};
 use colored::Colorize;
 use serde_json::json;
+use shared::{extract_abi, generate_markdown};
+use std::fs;
 
 pub async fn search(
     api_url: &str,
@@ -212,5 +214,24 @@ pub async fn list(api_url: &str, limit: usize, network: Option<&str>) -> Result<
     println!("\n{}", "=".repeat(80).cyan());
     println!();
 
+    Ok(())
+}
+
+pub fn doc(contract_path: &str, output_dir: &str) -> Result<()> {
+    let specs = extract_abi(contract_path)?;
+    let name = std::path::Path::new(contract_path)
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .unwrap_or("contract");
+
+    fs::create_dir_all(output_dir)?;
+
+    let md = generate_markdown(&specs, name);
+    fs::write(format!("{}/{}.md", output_dir, name), md)?;
+
+    let json = serde_json::to_string_pretty(&specs)?;
+    fs::write(format!("{}/{}.abi.json", output_dir, name), json)?;
+
+    println!("{}", "✓ Documentation generated".green());
     Ok(())
 }
