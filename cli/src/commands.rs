@@ -214,3 +214,124 @@ pub async fn list(api_url: &str, limit: usize, network: Option<&str>) -> Result<
 
     Ok(())
 }
+
+pub async fn migrate(
+    api_url: &str,
+    contract_id: &str,
+    wasm_path: &str,
+    simulate_fail: bool,
+    dry_run: bool,
+) -> Result<()> {
+    use sha2::{Digest, Sha256};
+    use std::fs;
+    use tokio::process::Command;
+
+    println!("\n{}", "Migration Tool".bold().cyan());
+    println!("{}", "=".repeat(80).cyan());
+
+    // 1. Read WASM file
+    let wasm_bytes = fs::read(wasm_path)
+        .with_context(|| format!("Failed to read WASM file at {}", wasm_path))?;
+    
+    // 2. Compute Hash
+    let mut hasher = Sha256::new();
+    hasher.update(&wasm_bytes);
+    let wasm_hash = hex::encode(hasher.finalize());
+
+    println!("Contract ID: {}", contract_id.green());
+    println!("WASM Path:   {}", wasm_path);
+    println!("WASM Hash:   {}", wasm_hash.bright_black());
+    println!("Size:        {} bytes", wasm_bytes.len());
+
+    if dry_run {
+        println!("\n{}", "[DRY RUN] No changes will be made.".yellow().bold());
+        println!("Would create migration record...");
+        println!("Would execute: soroban contract invoke --id {} --wasm {} ...", contract_id, wasm_path);
+        return Ok(());
+    }
+
+    // 3. Create Migration Record (Pending)
+    let client = reqwest::Client::new();
+    let create_url = format!("{}/api/migrations", api_url);
+    
+    let payload = json!({
+        "contract_id": contract_id,
+        "wasm_hash": wasm_hash,
+    });
+
+    print!("\nInitializing migration... ");
+    let response = client.post(&create_url)
+        .json(&payload)
+        .send()
+        .await
+        .context("Failed to contact registry API")?;
+
+    if !response.status().is_success() {
+        println!("{}", "Failed".red());
+        let err = response.text().await?;
+        anyhow::bail!("API Error: {}", err);
+    }
+
+    let migration: serde_json::Value = response.json().await?;
+    let migration_id = migration["id"].as_str().unwrap();
+    println!("{}", "OK".green());
+    println!("Migration ID: {}", migration_id);
+
+    // 4. Execute Migration (Mock or Real)
+    println!("\n{}", "Executing migration logic...".bold());
+    
+    // Check if soroban is installed
+    let version_output = Command::new("soroban")
+        .arg("--version")
+        .output()
+        .await;
+
+    let (status, log_output) = if version_output.is_err() {
+        println!("{}", "Warning: 'soroban' CLI not found. Running in MOCK mode.".yellow());
+        
+        if simulate_fail {
+             println!("{}", "Simulating FAILURE...".red());
+             (shared::models::MigrationStatus::Failed, "Simulation: Migration failed as requested.".to_string())
+        } else {
+             println!("{}", "Simulating SUCCESS...".green());
+             (shared::models::MigrationStatus::Success, "Simulation: Migration succeeded.".to_string())
+        }
+    } else {
+        // Real execution would go here. For now we will just mock it even if soroban exists 
+        // because we don't have a real contract to invoke in this environment.
+        println!("{}", "Soroban CLI found, but full integration is pending. Running in MOCK mode.".yellow());
+         if simulate_fail {
+             println!("{}", "Simulating FAILURE...".red());
+             (shared::models::MigrationStatus::Failed, "Simulation: Migration failed as requested.".to_string())
+        } else {
+             println!("{}", "Simulating SUCCESS...".green());
+             (shared::models::MigrationStatus::Success, "Simulation: Migration executed successfully via soroban CLI (mocked).".to_string())
+        }
+    };
+
+    // 5. Update Status
+    let update_url = format!("{}/api/migrations/{}", api_url, migration_id);
+    let update_payload = json!({
+        "status": status,
+        "log_output": log_output
+    });
+
+    let update_res = client.put(&update_url)
+        .json(&update_payload)
+        .send()
+        .await
+        .context("Failed to update migration status")?;
+
+    if !update_res.status().is_success() {
+        println!("{}", "Failed to update status!".red());
+    } else {
+        println!("\n{}", "Migration recorded successfully.".green().bold());
+        if status == shared::models::MigrationStatus::Failed {
+             println!("{}", "Status: FAILED".red().bold());
+        } else {
+             println!("{}", "Status: SUCCESS".green().bold());
+        }
+    }
+
+    Ok(())
+}

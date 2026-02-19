@@ -78,6 +78,25 @@ enum Commands {
         #[arg(long)]
         network: Option<String>,
     },
+
+    /// Run a contract state migration
+    Migrate {
+        /// Contract ID
+        #[arg(long)]
+        contract_id: String,
+
+        /// Path to the migration WASM file
+        #[arg(long)]
+        wasm: String,
+
+        /// Simulates a failure for testing purposes
+        #[arg(long)]
+        simulate_fail: bool,
+
+        /// Dry run (do not execute)
+        #[arg(long)]
+        dry_run: bool,
+    },
 }
 
 #[tokio::main]
@@ -118,6 +137,14 @@ async fn main() -> Result<()> {
         }
         Commands::List { limit, network } => {
             commands::list(&cli.api_url, limit, network.as_deref()).await?;
+        }
+        Commands::Migrate {
+            contract_id,
+            wasm,
+            simulate_fail,
+            dry_run,
+        } => {
+            commands::migrate(&cli.api_url, &contract_id, &wasm, simulate_fail, dry_run).await?;
         }
     }
 
