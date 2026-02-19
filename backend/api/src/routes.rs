@@ -10,6 +10,8 @@ pub fn contract_routes() -> Router<AppState> {
         .route("/api/contracts", get(handlers::list_contracts))
         .route("/api/contracts", post(handlers::publish_contract))
         .route("/api/contracts/:id", get(handlers::get_contract))
+        .route("/api/contracts/:id/abi", get(handlers::get_contract_abi))
+        .route("/api/contracts/:id/versions", get(handlers::get_contract_versions))
         .route(
             "/api/contracts/:id/versions",
             get(handlers::get_contract_versions),

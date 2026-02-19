@@ -107,6 +107,16 @@ enum Commands {
         #[arg(long, default_value = "./imported")]
         output_dir: String,
     },
+
+    /// Generate documentation from contract
+    Doc {
+        /// Path to contract WASM file
+        contract_path: String,
+
+        /// Output directory
+        #[arg(long, default_value = "docs")]
+        output: String,
+    },
 }
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -161,6 +171,9 @@ async fn main() -> Result<()> {
         }
         Commands::Import { archive, output_dir } => {
             commands::import(&cli.api_url, &archive, network, &output_dir).await?;
+        }
+        Commands::Doc { contract_path, output } => {
+            commands::doc(&contract_path, &output)?;
         }
     }
     Ok(())

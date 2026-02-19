@@ -2,6 +2,8 @@ use crate::config::Network;
 use anyhow::{Context, Result};
 use colored::Colorize;
 use serde_json::json;
+use shared::{extract_abi, generate_markdown};
+use std::fs;
 
 pub async fn search(
     api_url: &str,
