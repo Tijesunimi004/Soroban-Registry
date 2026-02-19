@@ -13,4 +13,4 @@ CREATE TABLE migrations (
 CREATE TRIGGER update_migrations_timestamp
 BEFORE UPDATE ON migrations
 FOR EACH ROW
-EXECUTE FUNCTION update_timestamp();
+EXECUTE FUNCTION update_updated_at_column();
