@@ -22,6 +22,8 @@ pub struct Contract {
     pub tags: Vec<String>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
+    #[serde(default)]
+    pub is_maintenance: bool,
 }
 
 /// Network where the contract is deployed
@@ -460,6 +462,34 @@ pub struct ProposalWithSignatures {
 pub struct UpdateMigrationStatusRequest {
     pub status: MigrationStatus,
     pub log_output: Option<String>,
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// MAINTENANCE MODE
+// ═══════════════════════════════════════════════════════════════════════════
+
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+pub struct MaintenanceWindow {
+    pub id: Uuid,
+    pub contract_id: Uuid,
+    pub message: String,
+    pub started_at: DateTime<Utc>,
+    pub scheduled_end_at: Option<DateTime<Utc>>,
+    pub ended_at: Option<DateTime<Utc>>,
+    pub created_by: Uuid,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StartMaintenanceRequest {
+    pub message: String,
+    pub scheduled_end_at: Option<DateTime<Utc>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MaintenanceStatusResponse {
+    pub is_maintenance: bool,
+    pub current_window: Option<MaintenanceWindow>,
 }
 
 impl std::fmt::Display for DeploymentEnvironment {

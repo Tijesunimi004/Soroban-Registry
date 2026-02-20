@@ -12,11 +12,11 @@ use uuid::Uuid;
 
 use crate::{
     benchmark_engine::{check_regression, format_cli_output, BenchmarkRunner, BenchmarkStats},
+    models::{
+        BenchmarkComparison, BenchmarkRecord, BenchmarkResponse, BenchmarkRun, BenchmarkStatus,
+        BenchmarkTrendPoint, ContractBenchmarkSummary, PerformanceAlert, RunBenchmarkRequest,
+    },
     state::AppState,
-};
-use shared::models::{
-    BenchmarkComparison, BenchmarkRecord, BenchmarkResponse, BenchmarkRun, BenchmarkStatus,
-    BenchmarkTrendPoint, ContractBenchmarkSummary, PerformanceAlert, RunBenchmarkRequest,
 };
 
 // ─────────────────────────────────────────────────────────

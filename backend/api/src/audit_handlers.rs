@@ -13,13 +13,13 @@ use uuid::Uuid;
 use crate::{
     checklist::all_checks,
     detector::detect_all,
+    models::{
+        AuditCheckRow, AuditRecord, AuditResponse, CategoryScore, CheckStatus, CheckWithStatus,
+        ContractSecuritySummary, CreateAuditRequest, DetectionMethod, ExportRequest,
+        UpdateCheckRequest,
+    },
     scoring::{build_markdown_report, calculate_scores, score_badge},
     state::AppState,
-};
-use shared::models::{
-    AuditCheckRow, AuditRecord, AuditResponse, CategoryScore, CheckStatus, CheckWithStatus,
-    ContractSecuritySummary, CreateAuditRequest, DetectionMethod, ExportRequest,
-    UpdateCheckRequest,
 };
 
 // ─────────────────────────────────────────────────────────

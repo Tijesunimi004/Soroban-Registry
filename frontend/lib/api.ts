@@ -13,6 +13,7 @@ export interface Contract {
   tags: string[];
   created_at: string;
   updated_at: string;
+  is_maintenance?: boolean;
 }
 
 export interface ContractVersion {
@@ -264,3 +265,50 @@ export interface ExampleRating {
   rating: number;
   created_at: string;
 }
+
+export interface MaintenanceWindow {
+  id: string;
+  contract_id: string;
+  message: string;
+  started_at: string;
+  scheduled_end_at?: string;
+  ended_at?: string;
+  created_by: string;
+  created_at: string;
+}
+
+export interface MaintenanceStatus {
+  is_maintenance: boolean;
+  current_window?: MaintenanceWindow;
+}
+
+export const maintenanceApi = {
+  async getStatus(contractId: string): Promise<MaintenanceStatus> {
+    const response = await fetch(`${API_URL}/api/contracts/${contractId}/maintenance`);
+    if (!response.ok) throw new Error('Failed to fetch maintenance status');
+    return response.json();
+  },
+
+  async getHistory(contractId: string): Promise<MaintenanceWindow[]> {
+    const response = await fetch(`${API_URL}/api/contracts/${contractId}/maintenance/history`);
+    if (!response.ok) throw new Error('Failed to fetch maintenance history');
+    return response.json();
+  },
+
+  async start(contractId: string, message: string, scheduledEndAt?: string): Promise<MaintenanceWindow> {
+    const response = await fetch(`${API_URL}/api/contracts/${contractId}/maintenance`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message, scheduled_end_at: scheduledEndAt }),
+    });
+    if (!response.ok) throw new Error('Failed to start maintenance');
+    return response.json();
+  },
+
+  async end(contractId: string): Promise<void> {
+    const response = await fetch(`${API_URL}/api/contracts/${contractId}/maintenance`, {
+      method: 'DELETE',
+    });
+    if (!response.ok) throw new Error('Failed to end maintenance');
+  },
+};

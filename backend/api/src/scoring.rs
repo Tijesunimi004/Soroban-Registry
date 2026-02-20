@@ -3,7 +3,7 @@
 
 use std::collections::HashMap;
 use crate::checklist::all_checks;
-use shared::models::{AuditCheckRow, CategoryScore, CheckStatus, ChecklistItem, DetectionMethod, Severity};
+use crate::models::{AuditCheckRow, CategoryScore, CheckStatus, ChecklistItem, DetectionMethod, Severity};
 
 pub fn severity_weight(sev: &Severity) -> f64 {
     match sev {

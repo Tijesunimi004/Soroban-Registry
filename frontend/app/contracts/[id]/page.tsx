@@ -2,8 +2,9 @@
 
 import { Suspense } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { api } from '@/lib/api';
+import { api, maintenanceApi } from '@/lib/api';
 import ExampleGallery from '@/components/ExampleGallery';
+import MaintenanceBanner from '@/components/MaintenanceBanner';
 import { ArrowLeft, CheckCircle2, Clock, Globe, Github, Tag } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
@@ -15,6 +16,12 @@ function ContractDetailsContent() {
   const { data: contract, isLoading, error } = useQuery({
     queryKey: ['contract', id],
     queryFn: () => api.getContract(id),
+  });
+
+  const { data: maintenanceStatus } = useQuery({
+    queryKey: ['maintenance', id],
+    queryFn: () => maintenanceApi.getStatus(id),
+    enabled: !!contract,
   });
 
   if (isLoading) {
@@ -48,6 +55,11 @@ function ContractDetailsContent() {
         <ArrowLeft className="w-4 h-4" />
         Back to contracts
       </Link>
+
+      {/* Maintenance Banner */}
+      {maintenanceStatus?.is_maintenance && maintenanceStatus.current_window && (
+        <MaintenanceBanner window={maintenanceStatus.current_window} />
+      )}
 
       {/* Header */}
       <div className="mb-12">

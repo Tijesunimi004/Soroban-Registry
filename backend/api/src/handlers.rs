@@ -10,9 +10,11 @@ use axum::{
     Json,
 };
 use shared::{
-    Contract, ContractDeployment, ContractSearchParams, ContractVersion, DeployGreenRequest,
-    DeploymentEnvironment, DeploymentStatus, DeploymentSwitch, HealthCheckRequest,
-    PaginatedResponse, PublishRequest, Publisher, SwitchDeploymentRequest, VerifyRequest,
+    AnalyticsEventType, Contract, ContractAnalyticsResponse, ContractDeployment,
+    ContractSearchParams, ContractVersion, DeployGreenRequest, DeploymentEnvironment,
+    DeploymentStats, DeploymentStatus, DeploymentSwitch, HealthCheckRequest, InteractorStats,
+    PaginatedResponse, PublishRequest, Publisher, SwitchDeploymentRequest, TimelineEntry,
+    TopUser, VerifyRequest,
 };
 use uuid::Uuid;
 

@@ -216,3 +216,75 @@ pub struct ExportRequest {
 fn default_true() -> bool {
     true
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// BENCHMARK TYPES (stubs for compilation)
+// ═══════════════════════════════════════════════════════════════════════════
+
+#[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
+pub struct BenchmarkRecord {
+    pub id: Uuid,
+    pub contract_id: Uuid,
+    pub method_name: String,
+    pub status: BenchmarkStatus,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "text")]
+pub enum BenchmarkStatus {
+    Pending,
+    Running,
+    Completed,
+    Failed,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct BenchmarkResponse {
+    pub benchmark: BenchmarkRecord,
+    pub runs: Vec<BenchmarkRun>,
+}
+
+#[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
+pub struct BenchmarkRun {
+    pub id: Uuid,
+    pub benchmark_id: Uuid,
+    pub iteration: i32,
+    pub latency_ms: f64,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct RunBenchmarkRequest {
+    pub method_name: String,
+    pub iterations: Option<i32>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct BenchmarkTrendPoint {
+    pub date: DateTime<Utc>,
+    pub p95_latency: f64,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct BenchmarkComparison {
+    pub baseline_p95: f64,
+    pub current_p95: f64,
+    pub regression_pct: f64,
+    pub is_regression: bool,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ContractBenchmarkSummary {
+    pub contract_id: Uuid,
+    pub total_benchmarks: i64,
+    pub avg_p95_latency: f64,
+}
+
+#[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
+pub struct PerformanceAlert {
+    pub id: Uuid,
+    pub benchmark_id: Uuid,
+    pub message: String,
+    pub created_at: DateTime<Utc>,
+}

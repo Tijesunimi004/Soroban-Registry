@@ -3,7 +3,7 @@
 
 use std::collections::HashMap;
 use crate::checklist::all_checks;
-use shared::models::{CheckStatus, DetectionMethod};
+use crate::models::{CheckStatus, DetectionMethod};
 
 /// Result of running the detector on a single check
 #[derive(Debug)]

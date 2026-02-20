@@ -1,3 +1,5 @@
+#![feature(str_as_str)]
+
 mod aggregation;
 mod analytics;
 mod audit_handlers;
@@ -11,6 +13,10 @@ mod checklist;
 mod detector;
 mod error;
 mod handlers;
+mod maintenance_handlers;
+mod maintenance_middleware;
+mod maintenance_routes;
+mod maintenance_scheduler;
 mod multisig_handlers;
 mod multisig_routes;
 mod models;
@@ -62,6 +68,9 @@ async fn main() -> Result<()> {
 
     // Spawn the hourly analytics aggregation background task
     aggregation::spawn_aggregation_task(pool.clone());
+    
+    // Spawn maintenance scheduler
+    maintenance_scheduler::spawn_maintenance_scheduler(pool.clone());
 
     // Create app state
     let state = AppState::new(pool);
@@ -82,10 +91,15 @@ async fn main() -> Result<()> {
         .merge(routes::health_routes())
         .merge(routes::migration_routes())
         .merge(multisig_routes::multisig_routes())
-        .merge(audit_routes::audit_routes())
+        .merge(audit_routes::security_audit_routes())
         .merge(benchmark_routes::benchmark_routes())
+        .merge(maintenance_routes::maintenance_routes())
         .fallback(handlers::route_not_found)
         .layer(middleware::from_fn(request_logger))
+        .layer(middleware::from_fn_with_state(
+            state.clone(),
+            maintenance_middleware::maintenance_check,
+        ))
         .layer(middleware::from_fn_with_state(
             rate_limit_state,
             rate_limit::rate_limit_middleware,
