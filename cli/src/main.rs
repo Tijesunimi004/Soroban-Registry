@@ -48,6 +48,9 @@ pub enum Commands {
         /// Only show verified contracts
         #[arg(long)]
         verified_only: bool,
+		  /// Output results as machine-readable JSON
+		  #[arg(long)]
+		  json: bool,
     },
 
     /// Get detailed information about a contract
@@ -92,6 +95,8 @@ pub enum Commands {
         /// Maximum number of contracts to show
         #[arg(long, default_value = "10")]
         limit: usize,
+		  #[arg(long)]
+        json: bool,
     },
 
     /// Migrate a contract to a new WASM
@@ -140,7 +145,10 @@ pub enum Commands {
 
     /// Generate documentation from a contract WASM
     Doc {
+        /// Path to contract WASM file
         contract_path: String,
+
+        /// Output directory
         #[arg(long, default_value = "docs")]
         output: String,
     },
@@ -483,9 +491,9 @@ async fn main() -> Result<()> {
     log::debug!("Network: {:?}", network);
 
     match cli.command {
-        Commands::Search { query, verified_only } => {
+         Commands::Search { query, verified_only, json } => {
             log::debug!("Command: search | query={:?} verified_only={}", query, verified_only);
-            commands::search(&cli.api_url, &query, network, verified_only).await?;
+            ccommands::search(&cli.api_url, &query, network, verified_only, json).await?;
         }
         Commands::Info { contract_id } => {
             log::debug!("Command: info | contract_id={}", contract_id);
@@ -507,9 +515,9 @@ async fn main() -> Result<()> {
                 category.as_deref(), tags_vec, &publisher,
             ).await?;
         }
-        Commands::List { limit } => {
+         Commands::List { limit, json } => {
             log::debug!("Command: list | limit={}", limit);
-            commands::list(&cli.api_url, limit, network).await?;
+            commands::list(&cli.api_url, limit, network, json).await?;
         }
         Commands::Migrate { contract_id, wasm, simulate_fail, dry_run } => {
             log::debug!(
