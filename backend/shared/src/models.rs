@@ -24,6 +24,20 @@ pub struct Contract {
     pub updated_at: DateTime<Utc>,
     #[serde(default)]
     pub is_maintenance: bool,
+    #[serde(default)]
+    pub maturity: MaturityLevel,
+}
+
+/// Contract maturity level
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type, Default)]
+#[sqlx(type_name = "maturity_level", rename_all = "lowercase")]
+pub enum MaturityLevel {
+    #[default]
+    Alpha,
+    Beta,
+    Stable,
+    Mature,
+    Legacy,
 }
 
 /// Network where the contract is deployed
@@ -123,6 +137,7 @@ pub struct ContractSearchParams {
     pub verified_only: Option<bool>,
     pub category: Option<String>,
     pub tags: Option<Vec<String>>,
+    pub maturity: Option<MaturityLevel>,
     pub page: Option<i64>,
     #[serde(alias = "page_size")]
     pub limit: Option<i64>,
@@ -490,6 +505,42 @@ pub struct StartMaintenanceRequest {
 pub struct MaintenanceStatusResponse {
     pub is_maintenance: bool,
     pub current_window: Option<MaintenanceWindow>,
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// MATURITY LEVELS
+// ═══════════════════════════════════════════════════════════════════════════
+
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+pub struct MaturityChange {
+    pub id: Uuid,
+    pub contract_id: Uuid,
+    pub from_level: Option<MaturityLevel>,
+    pub to_level: MaturityLevel,
+    pub reason: Option<String>,
+    pub changed_by: Uuid,
+    pub changed_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UpdateMaturityRequest {
+    pub maturity: MaturityLevel,
+    pub reason: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MaturityRequirements {
+    pub level: MaturityLevel,
+    pub criteria: Vec<MaturityCriterion>,
+    pub met: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MaturityCriterion {
+    pub name: String,
+    pub required: bool,
+    pub met: bool,
+    pub description: String,
 }
 
 impl std::fmt::Display for DeploymentEnvironment {

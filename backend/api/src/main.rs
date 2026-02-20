@@ -17,6 +17,8 @@ mod maintenance_handlers;
 mod maintenance_middleware;
 mod maintenance_routes;
 mod maintenance_scheduler;
+mod maturity_handlers;
+mod maturity_routes;
 mod multisig_handlers;
 mod multisig_routes;
 mod models;
@@ -94,6 +96,7 @@ async fn main() -> Result<()> {
         .merge(audit_routes::security_audit_routes())
         .merge(benchmark_routes::benchmark_routes())
         .merge(maintenance_routes::maintenance_routes())
+        .merge(maturity_routes::maturity_routes())
         .fallback(handlers::route_not_found)
         .layer(middleware::from_fn(request_logger))
         .layer(middleware::from_fn_with_state(

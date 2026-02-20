@@ -1,6 +1,7 @@
 import { Contract } from '@/lib/api';
 import { CheckCircle2, Clock, ExternalLink, Tag } from 'lucide-react';
 import Link from 'next/link';
+import MaturityBadge from './MaturityBadge';
 
 interface ContractCardProps {
   contract: Contract;
@@ -36,9 +37,14 @@ export default function ContractCard({ contract }: ContractCardProps) {
               </p>
             </div>
             
-            <span className={`px-3 py-1 rounded-full text-xs font-medium border ${networkColors[contract.network]}`}>
-              {contract.network}
-            </span>
+            <div className="flex flex-col gap-2 items-end">
+              <span className={`px-3 py-1 rounded-full text-xs font-medium border ${networkColors[contract.network]}`}>
+                {contract.network}
+              </span>
+              {contract.maturity && (
+                <MaturityBadge level={contract.maturity} size="sm" />
+              )}
+            </div>
           </div>
 
           {/* Description */}

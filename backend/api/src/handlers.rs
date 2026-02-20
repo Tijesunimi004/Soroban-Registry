@@ -159,6 +159,12 @@ pub async fn list_contracts(
         count_query.push_str(&category_clause);
     }
 
+    if let Some(ref maturity) = params.maturity {
+        let maturity_clause = format!(" AND maturity = '{}'", maturity);
+        query.push_str(&maturity_clause);
+        count_query.push_str(&maturity_clause);
+    }
+
     query.push_str(&format!(
         " ORDER BY created_at DESC LIMIT {} OFFSET {}",
         limit, offset

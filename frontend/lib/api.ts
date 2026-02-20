@@ -14,6 +14,7 @@ export interface Contract {
   created_at: string;
   updated_at: string;
   is_maintenance?: boolean;
+  maturity?: 'alpha' | 'beta' | 'stable' | 'mature' | 'legacy';
 }
 
 export interface ContractVersion {
@@ -51,6 +52,7 @@ export interface ContractSearchParams {
   verified_only?: boolean;
   category?: string;
   tags?: string[];
+  maturity?: 'alpha' | 'beta' | 'stable' | 'mature' | 'legacy';
   page?: number;
   page_size?: number;
 }
@@ -109,6 +111,7 @@ export const api = {
     if (params?.network) queryParams.append('network', params.network);
     if (params?.verified_only !== undefined) queryParams.append('verified_only', String(params.verified_only));
     if (params?.category) queryParams.append('category', params.category);
+    if (params?.maturity) queryParams.append('maturity', params.maturity);
     if (params?.page) queryParams.append('page', String(params.page));
     if (params?.page_size) queryParams.append('page_size', String(params.page_size));
 
@@ -310,5 +313,54 @@ export const maintenanceApi = {
       method: 'DELETE',
     });
     if (!response.ok) throw new Error('Failed to end maintenance');
+  },
+};
+
+export type MaturityLevel = 'alpha' | 'beta' | 'stable' | 'mature' | 'legacy';
+
+export interface MaturityChange {
+  id: string;
+  contract_id: string;
+  from_level?: MaturityLevel;
+  to_level: MaturityLevel;
+  reason?: string;
+  changed_by: string;
+  changed_at: string;
+}
+
+export interface MaturityCriterion {
+  name: string;
+  required: boolean;
+  met: boolean;
+  description: string;
+}
+
+export interface MaturityRequirements {
+  level: MaturityLevel;
+  criteria: MaturityCriterion[];
+  met: boolean;
+}
+
+export const maturityApi = {
+  async update(contractId: string, maturity: MaturityLevel, reason?: string): Promise<Contract> {
+    const response = await fetch(`${API_URL}/api/contracts/${contractId}/maturity`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ maturity, reason }),
+    });
+    if (!response.ok) throw new Error('Failed to update maturity');
+    return response.json();
+  },
+
+  async getHistory(contractId: string): Promise<MaturityChange[]> {
+    const response = await fetch(`${API_URL}/api/contracts/${contractId}/maturity/history`);
+    if (!response.ok) throw new Error('Failed to fetch maturity history');
+    return response.json();
+  },
+
+  async checkRequirements(contractId: string): Promise<MaturityRequirements[]> {
+    const response = await fetch(`${API_URL}/api/contracts/${contractId}/maturity/requirements`);
+    if (!response.ok) throw new Error('Failed to check requirements');
+    return response.json();
   },
 };
