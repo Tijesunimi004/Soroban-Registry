@@ -8,9 +8,9 @@ interface ContractCardProps {
 
 export default function ContractCard({ contract }: ContractCardProps) {
   const networkColors = {
-    mainnet: 'bg-green-500/10 text-green-600 border-green-500/20',
-    testnet: 'bg-blue-500/10 text-blue-600 border-blue-500/20',
-    futurenet: 'bg-purple-500/10 text-purple-600 border-purple-500/20',
+    Mainnet: 'bg-green-500/10 text-green-600 border-green-500/20',
+    Testnet: 'bg-blue-500/10 text-blue-600 border-blue-500/20',
+    Futurenet: 'bg-purple-500/10 text-purple-600 border-purple-500/20',
   };
 
   return (
@@ -18,7 +18,7 @@ export default function ContractCard({ contract }: ContractCardProps) {
       <div className="group relative overflow-hidden rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 transition-all hover:border-blue-500/50 hover:shadow-lg hover:shadow-blue-500/10">
         {/* Gradient overlay on hover */}
         <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-purple-500/5 opacity-0 transition-opacity group-hover:opacity-100" />
-        
+
         <div className="relative">
           {/* Header */}
           <div className="flex items-start justify-between mb-3">
@@ -35,7 +35,7 @@ export default function ContractCard({ contract }: ContractCardProps) {
                 {contract.contract_id.slice(0, 8)}...{contract.contract_id.slice(-6)}
               </p>
             </div>
-            
+
             <span className={`px-3 py-1 rounded-full text-xs font-medium border ${networkColors[contract.network]}`}>
               {contract.network}
             </span>

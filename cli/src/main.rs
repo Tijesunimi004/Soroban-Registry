@@ -52,7 +52,7 @@ enum Commands {
         description: Option<String>,
 
         /// Network (mainnet, testnet, futurenet)
-        #[arg(long, default_value = "testnet")]
+        #[arg(long, default_value = "Testnet")]
         network: String,
 
         /// Category

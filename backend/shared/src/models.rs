@@ -87,6 +87,43 @@ pub struct ContractStats {
     pub last_interaction: Option<DateTime<Utc>>,
 }
 
+/// Contract dependency relationship
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+pub struct ContractDependency {
+    pub id: Uuid,
+    pub contract_id: Uuid,
+    pub depends_on_id: Uuid,
+    pub dependency_type: String,
+    pub created_at: DateTime<Utc>,
+}
+
+/// Graph node (minimal contract info for graph rendering)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GraphNode {
+    pub id: Uuid,
+    pub contract_id: String,
+    pub name: String,
+    pub network: Network,
+    pub is_verified: bool,
+    pub category: Option<String>,
+    pub tags: Vec<String>,
+}
+
+/// Graph edge (dependency relationship)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GraphEdge {
+    pub source: Uuid,
+    pub target: Uuid,
+    pub dependency_type: String,
+}
+
+/// Full graph response
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GraphResponse {
+    pub nodes: Vec<GraphNode>,
+    pub edges: Vec<GraphEdge>,
+}
+
 /// Request to publish a new contract
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PublishRequest {

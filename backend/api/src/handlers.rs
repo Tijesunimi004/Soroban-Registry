@@ -3,9 +3,10 @@ use axum::{
     http::StatusCode,
     Json,
 };
+use serde::Deserialize;
 use shared::{
-    Contract, ContractSearchParams, ContractVersion, PaginatedResponse, 
-    PublishRequest, Publisher, VerifyRequest,
+    Contract, ContractSearchParams, ContractVersion, GraphEdge, GraphNode,
+    GraphResponse, Network, PaginatedResponse, PublishRequest, Publisher, VerifyRequest,
 };
 use uuid::Uuid;
 
@@ -42,6 +43,69 @@ pub async fn get_stats(
         "verified_contracts": verified_contracts,
         "total_publishers": total_publishers,
     })))
+}
+
+/// Get dependency graph data for all contracts
+#[derive(Debug, Deserialize)]
+pub struct GraphParams {
+    pub network: Option<Network>,
+}
+
+pub async fn get_contract_graph(
+    State(state): State<AppState>,
+    Query(params): Query<GraphParams>,
+) -> Result<Json<GraphResponse>, StatusCode> {
+    // Query nodes
+    let nodes: Vec<GraphNode> = if let Some(ref network) = params.network {
+        sqlx::query_as::<_, (uuid::Uuid, String, String, Network, bool, Option<String>, Vec<String>)>(
+            "SELECT id, contract_id, name, network, is_verified, category, tags FROM contracts WHERE network = $1"
+        )
+        .bind(network)
+        .fetch_all(&state.db)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+        .into_iter()
+        .map(|(id, contract_id, name, network, is_verified, category, tags)| GraphNode {
+            id, contract_id, name, network, is_verified, category, tags,
+        })
+        .collect()
+    } else {
+        sqlx::query_as::<_, (uuid::Uuid, String, String, Network, bool, Option<String>, Vec<String>)>(
+            "SELECT id, contract_id, name, network, is_verified, category, tags FROM contracts"
+        )
+        .fetch_all(&state.db)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+        .into_iter()
+        .map(|(id, contract_id, name, network, is_verified, category, tags)| GraphNode {
+            id, contract_id, name, network, is_verified, category, tags,
+        })
+        .collect()
+    };
+
+    // Collect node IDs for filtering edges
+    let node_ids: std::collections::HashSet<uuid::Uuid> = nodes.iter().map(|n| n.id).collect();
+
+    // Query all edges
+    let all_edges: Vec<(uuid::Uuid, uuid::Uuid, String)> = sqlx::query_as(
+        "SELECT contract_id, depends_on_id, dependency_type FROM contract_dependencies"
+    )
+    .fetch_all(&state.db)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    // Filter edges to only include nodes in our set
+    let edges: Vec<GraphEdge> = all_edges
+        .into_iter()
+        .filter(|(source, target, _)| node_ids.contains(source) && node_ids.contains(target))
+        .map(|(source, target, dependency_type)| GraphEdge {
+            source,
+            target,
+            dependency_type,
+        })
+        .collect();
+
+    Ok(Json(GraphResponse { nodes, edges }))
 }
 
 /// List and search contracts

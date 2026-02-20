@@ -7,20 +7,25 @@ use crate::{handlers, state::AppState};
 
 /// Contract-related routes
 pub fn contract_routes() -> Router<AppState> {
-    Router::new()
-        .route("/api/contracts", get(handlers::list_contracts))
-        .route("/api/contracts", post(handlers::publish_contract))
-        .route("/api/contracts/:id", get(handlers::get_contract))
-        .route("/api/contracts/:id/versions", get(handlers::get_contract_versions))
-        .route("/api/contracts/verify", post(handlers::verify_contract))
+
+    let contracts_nested = Router::new()
+        .route("/", get(handlers::list_contracts).post(handlers::publish_contract))
+        .route("/graph", get(handlers::get_contract_graph))
+        .route("/verify", post(handlers::verify_contract))
+        .route("/{id}", get(handlers::get_contract))
+        .route("/{id}/versions", get(handlers::get_contract_versions));
+
+    Router::new().nest("/api/contracts", contracts_nested)
 }
 
 /// Publisher-related routes
 pub fn publisher_routes() -> Router<AppState> {
-    Router::new()
-        .route("/api/publishers", post(handlers::create_publisher))
-        .route("/api/publishers/:id", get(handlers::get_publisher))
-        .route("/api/publishers/:id/contracts", get(handlers::get_publisher_contracts))
+    let publishers_nested = Router::new()
+        .route("/", post(handlers::create_publisher))
+        .route("/{id}", get(handlers::get_publisher))
+        .route("/{id}/contracts", get(handlers::get_publisher_contracts));
+
+    Router::new().nest("/api/publishers", publishers_nested)
 }
 
 /// Health check routes
