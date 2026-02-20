@@ -1,6 +1,7 @@
 mod commands;
 mod config;
 mod export;
+mod fuzz;
 mod import;
 mod manifest;
 mod multisig;
@@ -541,6 +542,29 @@ async fn main() -> Result<()> {
                 multisig::list_proposals(&cli.api_url, status.as_deref(), limit).await?;
             }
         },
+<<<<<<< feat/contract-fuzzing-tool
+
+        Commands::Fuzz {
+            contract_path,
+            duration,
+            timeout,
+            threads,
+            max_cases,
+            output,
+            minimize,
+        } => {
+            fuzz::run_fuzzer(
+                &contract_path,
+                &duration,
+                &timeout,
+                threads,
+                max_cases,
+                &output,
+                minimize,
+            )
+            .await?;
+        }
+=======
         Commands::Profile {
             contract_path,
             method,
@@ -602,6 +626,7 @@ async fn main() -> Result<()> {
                 commands::config_rollback(&cli.api_url, &contract_id, &environment, version, &created_by).await?;
             }
         },
+>>>>>>> main
     }
 
     Ok(())
