@@ -1,5 +1,19 @@
+mod aggregation;
+mod analytics;
+mod audit_handlers;
+mod audit_routes;
+mod benchmark_engine;
+mod benchmark_handlers;
+mod benchmark_routes;
+mod cache;
+mod cache_benchmark;
+mod checklist;
+mod detector;
 mod error;
 mod handlers;
+mod models;
+mod multisig_handlers;
+mod multisig_routes;
 mod popularity;
 mod rate_limit;
 mod routes;
@@ -48,6 +62,8 @@ async fn main() -> Result<()> {
 
     // Spawn background popularity scoring job (runs hourly)
     popularity::spawn_popularity_task(pool.clone());
+    // Spawn the hourly analytics aggregation background task
+    aggregation::spawn_aggregation_task(pool.clone());
 
     // Create app state
     let state = AppState::new(pool);
@@ -67,6 +83,12 @@ async fn main() -> Result<()> {
         .merge(routes::publisher_routes())
         .merge(routes::health_routes())
         .merge(routes::migration_routes())
+        .merge(routes::canary_routes())
+        .merge(routes::ab_test_routes())
+        .merge(routes::performance_routes())
+        .merge(multisig_routes::multisig_routes())
+        .merge(audit_routes::audit_routes())
+        .merge(benchmark_routes::benchmark_routes())
         .fallback(handlers::route_not_found)
         .layer(middleware::from_fn(request_logger))
         .layer(middleware::from_fn_with_state(
