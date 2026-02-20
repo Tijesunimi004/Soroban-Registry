@@ -15,6 +15,7 @@ pub enum Network {
     Mainnet,
     Testnet,
     Futurenet,
+    Auto, // Issue #78: Added Auto routing variant
 }
 
 impl fmt::Display for Network {
@@ -23,6 +24,7 @@ impl fmt::Display for Network {
             Network::Mainnet => write!(f, "mainnet"),
             Network::Testnet => write!(f, "testnet"),
             Network::Futurenet => write!(f, "futurenet"),
+            Network::Auto => write!(f, "auto"), // Issue #78
         }
     }
 }
@@ -39,6 +41,8 @@ impl FromStr for Network {
                 "Invalid network: {}. Allowed values: mainnet, testnet, futurenet",
                 s
             ),
+            "auto" => Ok(Network::Auto), // Issue #78: Allow "auto" string
+            _ => anyhow::bail!("Invalid network: {}. Allowed values: mainnet, testnet, futurenet, auto", s),
         }
     }
 }
@@ -190,6 +194,7 @@ mod tests {
         assert_eq!("mainnet".parse::<Network>().unwrap(), Network::Mainnet);
         assert_eq!("testnet".parse::<Network>().unwrap(), Network::Testnet);
         assert_eq!("futurenet".parse::<Network>().unwrap(), Network::Futurenet);
+        assert_eq!("auto".parse::<Network>().unwrap(), Network::Auto); // Issue #78
         assert_eq!("Mainnet".parse::<Network>().unwrap(), Network::Mainnet); // Case insensitive
         assert!("invalid".parse::<Network>().is_err());
     }
@@ -215,4 +220,8 @@ timeout = 55
         assert_eq!(defaults.api_base.as_deref(), Some("http://localhost:9000"));
         assert_eq!(defaults.timeout, Some(55));
     }
+}
+        // Note: Integration tests involving file system would require mocking or temporary files.
+    // Given the constraints and the environment, we focus on unit tests for parsing here.
+    // `resolve_network` with file interaction is harder to test in isolation without dependency injection or mocking `dirs` / `fs`.
 }
