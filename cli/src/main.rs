@@ -1,5 +1,6 @@
 mod commands;
 mod config;
+mod events;
 mod export;
 mod import;
 mod manifest;
@@ -160,6 +161,36 @@ pub enum Commands {
     Multisig {
         #[command(subcommand)]
         action: MultisigCommands,
+    },
+
+    /// Query contract events with filtering
+    Events {
+        /// Contract ID to query events for
+        contract_id: String,
+
+        /// Filter by event topic
+        #[arg(long)]
+        topic: Option<String>,
+
+        /// Filter by data pattern (JSON path or value)
+        #[arg(long)]
+        filter: Option<String>,
+
+        /// Maximum number of events to return
+        #[arg(long, default_value = "100")]
+        limit: i64,
+
+        /// Offset for pagination
+        #[arg(long, default_value = "0")]
+        offset: i64,
+
+        /// Export events to CSV file
+        #[arg(long)]
+        export: Option<String>,
+
+        /// Show event statistics only
+        #[arg(long)]
+        stats: bool,
     },
 }
 
@@ -459,6 +490,28 @@ async fn main() -> Result<()> {
                 multisig::list_proposals(&cli.api_url, status.as_deref(), limit).await?;
             }
         },
+
+        Commands::Events {
+            contract_id,
+            topic,
+            filter,
+            limit,
+            offset,
+            export,
+            stats,
+        } => {
+            events::query_events(
+                &cli.api_url,
+                &contract_id,
+                topic.as_deref(),
+                filter.as_deref(),
+                limit,
+                offset,
+                export.as_deref(),
+                stats,
+            )
+            .await?;
+        }
     }
 
     Ok(())

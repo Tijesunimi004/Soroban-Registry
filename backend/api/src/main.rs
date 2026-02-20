@@ -10,6 +10,8 @@ mod cache_benchmark;
 mod checklist;
 mod detector;
 mod error;
+mod event_handlers;
+mod event_routes;
 mod handlers;
 mod multisig_handlers;
 mod multisig_routes;
@@ -84,6 +86,7 @@ async fn main() -> Result<()> {
         .merge(multisig_routes::multisig_routes())
         .merge(audit_routes::audit_routes())
         .merge(benchmark_routes::benchmark_routes())
+        .merge(event_routes::event_routes())
         .fallback(handlers::route_not_found)
         .layer(middleware::from_fn(request_logger))
         .layer(middleware::from_fn_with_state(
