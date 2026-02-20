@@ -189,7 +189,7 @@ pub enum DeploymentEnvironment {
     Green,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type, PartialEq)]
 #[sqlx(type_name = "deployment_status", rename_all = "lowercase")]
 pub enum DeploymentStatus {
     Active,
@@ -320,6 +320,8 @@ pub struct TopUser {
 pub struct TimelineEntry {
     pub date: chrono::NaiveDate,
     pub count: i64,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DeployGreenRequest {
     pub contract_id: String,
@@ -337,4 +339,19 @@ pub struct HealthCheckRequest {
     pub contract_id: String,
     pub environment: DeploymentEnvironment,
     pub passed: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UpdateMigrationStatusRequest {
+    pub status: MigrationStatus,
+    pub log_output: Option<String>,
+}
+
+impl std::fmt::Display for DeploymentEnvironment {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+         match self {
+             DeploymentEnvironment::Blue => write!(f, "blue"),
+             DeploymentEnvironment::Green => write!(f, "green"),
+         }
+    }
 }
