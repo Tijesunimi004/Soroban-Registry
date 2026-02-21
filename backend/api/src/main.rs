@@ -12,6 +12,7 @@ mod aggregation;
 mod analytics;
 mod audit_handlers;
 mod audit_routes;
+mod compatibility_handlers;
 mod benchmark_engine;
 mod benchmark_handlers;
 mod benchmark_routes;
@@ -24,6 +25,8 @@ mod contract_history_handlers;
 mod contract_history_routes;
 mod detector;
 mod error;
+mod event_handlers;
+mod event_routes;
 mod handlers;
 mod metrics;
 mod observability;
@@ -47,14 +50,21 @@ mod trust;
 mod health_monitor;
 mod migration_cli;
 mod validation;
+mod formal_verification_handlers;
+mod formal_verification_routes;
 mod type_safety;
 mod type_safety_handlers;
 mod type_safety_routes;
+mod regression_engine;
+mod regression_handlers;
+mod regression_routes;
+mod regression_service;
 
 use anyhow::Result;
 use axum::http::{header, HeaderValue, Method};
 use axum::{middleware, routing::get, Router};
 use dotenv::dotenv;
+use shared::FeatureFlag;
 use sqlx::postgres::PgPoolOptions;
 use std::net::SocketAddr;
 use tower_http::cors::CorsLayer;
@@ -82,6 +92,11 @@ async fn main() -> Result<()> {
     tracing::info!("database connected and migrations applied");
 
     aggregation::spawn_aggregation_task(pool.clone());
+    
+    // Spawn regression testing background services
+    tokio::spawn(regression_service::run_regression_monitor(pool.clone()));
+    tokio::spawn(regression_service::run_statistics_calculator(pool.clone()));
+    tracing::info!("regression testing services started");
 
     let state = AppState::new(pool);
     let obs = Observability::init()?;
@@ -165,6 +180,9 @@ pub enum Commands {
     popularity::spawn_popularity_task(pool.clone());
     // Spawn the hourly analytics aggregation background task
     aggregation::spawn_aggregation_task(pool.clone());
+    
+    // Spawn maintenance scheduler
+    maintenance_scheduler::spawn_maintenance_scheduler(pool.clone());
 
         /// Verbose output
         #[arg(long, short)]
@@ -850,12 +868,18 @@ async fn main() -> Result<()> {
         .merge(contract_history_routes::contract_history_routes())
         .merge(template_routes::template_routes())
         .merge(scan_routes::scan_routes())
+        .merge(formal_verification_routes::formal_verification_routes())
         .route("/metrics", get(observability::metrics_handler))
         .merge(routes::observability_routes())
         .merge(residency_routes::residency_routes())
         .merge(type_safety_routes::type_safety_routes())
+        .merge(regression_routes::regression_routes())
         .fallback(handlers::route_not_found)
         .layer(middleware::from_fn(metrics_middleware))
+        .layer(middleware::from_fn_with_state(
+            state.clone(),
+            maintenance_middleware::maintenance_check,
+        ))
         .layer(middleware::from_fn_with_state(
             rate_limit_state,
             rate_limit::rate_limit_middleware,

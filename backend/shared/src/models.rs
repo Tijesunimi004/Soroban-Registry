@@ -23,6 +23,8 @@ pub struct Contract {
     pub tags: Vec<String>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
+    #[serde(default)]
+    pub is_maintenance: bool,
 }
 
 /// Network where the contract is deployed
@@ -33,6 +35,16 @@ pub enum Network {
     Mainnet,
     Testnet,
     Futurenet,
+}
+
+impl std::fmt::Display for Network {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Network::Mainnet => write!(f, "mainnet"),
+            Network::Testnet => write!(f, "testnet"),
+            Network::Futurenet => write!(f, "futurenet"),
+        }
+    }
 }
 
 /// Contract version information
@@ -93,17 +105,7 @@ pub struct ContractStats {
     pub last_interaction: Option<DateTime<Utc>>,
 }
 
-/// Contract dependency relationship
-#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
-pub struct ContractDependency {
-    pub id: Uuid,
-    pub contract_id: Uuid,
-    pub depends_on_id: Uuid,
-    pub dependency_type: String,
-    pub created_at: DateTime<Utc>,
-}
-
-/// Graph node (minimal contract info for graph rendering)
+/// GraphNode (minimal contract info for graph rendering)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GraphNode {
     pub id: Uuid,
@@ -191,6 +193,7 @@ pub struct ContractSearchParams {
     pub verified_only: Option<bool>,
     pub category: Option<String>,
     pub tags: Option<Vec<String>>,
+    pub maturity: Option<MaturityLevel>,
     pub page: Option<i64>,
     #[serde(alias = "page_size")]
     pub limit: Option<i64>,
@@ -891,14 +894,17 @@ pub struct RollbackRequest {
 }
 
 /// Paginated response for audit log
+// TODO: Implement missing types: DeployProposal, MultisigPolicy, ProposalSignature
+// #[derive(Debug, Clone, Serialize, Deserialize)]
+// pub struct ProposalWithSignatures {
+//     pub proposal: DeployProposal,
+//     pub policy: MultisigPolicy,
+//     pub signatures: Vec<ProposalSignature>,
+//     /// How many more signatures are needed to reach the threshold
+//     pub signatures_needed: i32,
+// }
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ProposalWithSignatures {
-    pub proposal: DeployProposal,
-    pub policy: MultisigPolicy,
-    pub signatures: Vec<ProposalSignature>,
-    /// How many more signatures are needed to reach the threshold
-    pub signatures_needed: i32,
-}
 pub struct AuditLogPage {
     pub items:       Vec<ContractAuditLog>,
     pub total:       i64,
@@ -965,6 +971,8 @@ impl From<ContractConfig> for ContractConfigResponse {
             created_by: config.created_by,
         }
     }
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 // DATA RESIDENCY CONTROLS  (issue #100)
 // ═══════════════════════════════════════════════════════════════════════════
@@ -1045,9 +1053,78 @@ pub struct CheckResidencyRequest {
     pub requested_by:     Option<String>,
 }
 
+impl std::fmt::Display for DeploymentEnvironment {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            DeploymentEnvironment::Blue => write!(f, "blue"),
+            DeploymentEnvironment::Green => write!(f, "green"),
+        }
+    }
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ListResidencyLogsParams {
     pub contract_id: Option<String>,
     pub limit:       Option<i64>,
     pub page:        Option<i64>,
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CONTRACT EVENT TYPES (issue #44)
+// ═══════════════════════════════════════════════════════════════════════════
+
+/// A contract event emitted during execution
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+pub struct ContractEvent {
+    pub id: Uuid,
+    pub contract_id: String,
+    pub topic: String,
+    pub data: Option<serde_json::Value>,
+    pub ledger_sequence: i64,
+    pub transaction_hash: Option<String>,
+    pub timestamp: DateTime<Utc>,
+    pub network: Network,
+    pub created_at: DateTime<Utc>,
+}
+
+/// Query parameters for searching events
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EventQueryParams {
+    pub topic: Option<String>,
+    pub data_pattern: Option<String>,
+    pub from_timestamp: Option<DateTime<Utc>>,
+    pub to_timestamp: Option<DateTime<Utc>>,
+    pub from_ledger: Option<i64>,
+    pub to_ledger: Option<i64>,
+    pub limit: Option<i64>,
+    pub offset: Option<i64>,
+}
+
+/// Request to index a new event
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct IndexEventRequest {
+    pub contract_id: String,
+    pub topic: String,
+    pub data: Option<serde_json::Value>,
+    pub ledger_sequence: i64,
+    pub transaction_hash: Option<String>,
+    pub network: Network,
+}
+
+/// Event statistics for a contract
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EventStats {
+    pub contract_id: String,
+    pub total_events: i64,
+    pub unique_topics: i64,
+    pub first_event: Option<DateTime<Utc>>,
+    pub last_event: Option<DateTime<Utc>>,
+    pub events_by_topic: serde_json::Value,
+}
+
+/// CSV export response
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EventExport {
+    pub contract_id: String,
+    pub events: Vec<ContractEvent>,
+    pub exported_at: DateTime<Utc>,
+    pub total_count: i64,
 }

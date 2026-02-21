@@ -1,5 +1,7 @@
 mod commands;
+mod backup;
 mod config;
+mod events;
 mod export;
 mod fuzz;
 mod import;
@@ -10,6 +12,8 @@ mod profiler;
 mod sla;
 mod test_framework;
 mod wizard;
+mod formal_verification;
+mod coverage;
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};
@@ -48,6 +52,9 @@ pub enum Commands {
         /// Only show verified contracts
         #[arg(long)]
         verified_only: bool,
+		  /// Output results as machine-readable JSON
+		  #[arg(long)]
+		  json: bool,
     },
 
     /// Get detailed information about a contract
@@ -92,6 +99,8 @@ pub enum Commands {
         /// Maximum number of contracts to show
         #[arg(long, default_value = "10")]
         limit: usize,
+		  #[arg(long)]
+        json: bool,
     },
 
     /// Migrate a contract to a new WASM
@@ -140,7 +149,10 @@ pub enum Commands {
 
     /// Generate documentation from a contract WASM
     Doc {
+        /// Path to contract WASM file
         contract_path: String,
+
+        /// Output directory
         #[arg(long, default_value = "docs")]
         output: String,
     },
@@ -248,6 +260,24 @@ pub enum Commands {
         action: ConfigSubcommands,
     },
     
+    /// Run formal verification analysis against a deployed or local contract
+    VerifyFormal {
+        /// Path to contract file
+        contract_path: String,
+        
+        /// Path to properties DSL file
+        #[arg(long)]
+        properties: String,
+        
+        /// Output format (json or text)
+        #[arg(long, default_value = "text")]
+        output: String,
+        
+        /// Post results back to registry
+        #[arg(long)]
+        post: bool,
+    },
+
     ScanDeps {
         #[arg(long)]
         contract_id: String,
@@ -255,6 +285,24 @@ pub enum Commands {
         dependencies: String,
         #[arg(long, default_value_t = false)]
         fail_on_high: bool,
+    },
+
+    /// Measure and report code coverage for contract tests
+    Coverage {
+        /// Path to contract directory
+        contract_path: String,
+
+        /// Path to test directory or file
+        #[arg(long)]
+        tests: String,
+
+        /// Fail if coverage is below this threshold (0-100)
+        #[arg(long, default_value_t = 0.0)]
+        threshold: f64,
+
+        /// Output directory for HTML reports
+        #[arg(long, default_value = "coverage_report")]
+        output: String,
     },
 }
 
@@ -483,9 +531,9 @@ async fn main() -> Result<()> {
     log::debug!("Network: {:?}", network);
 
     match cli.command {
-        Commands::Search { query, verified_only } => {
+         Commands::Search { query, verified_only, json } => {
             log::debug!("Command: search | query={:?} verified_only={}", query, verified_only);
-            commands::search(&cli.api_url, &query, network, verified_only).await?;
+            ccommands::search(&cli.api_url, &query, network, verified_only, json).await?;
         }
         Commands::Info { contract_id } => {
             log::debug!("Command: info | contract_id={}", contract_id);
@@ -507,9 +555,9 @@ async fn main() -> Result<()> {
                 category.as_deref(), tags_vec, &publisher,
             ).await?;
         }
-        Commands::List { limit } => {
+         Commands::List { limit, json } => {
             log::debug!("Command: list | limit={}", limit);
-            commands::list(&cli.api_url, limit, network).await?;
+            commands::list(&cli.api_url, limit, network, json).await?;
         }
         Commands::Migrate { contract_id, wasm, simulate_fail, dry_run } => {
             log::debug!(
@@ -689,8 +737,14 @@ async fn main() -> Result<()> {
                 commands::config_rollback(&cli.api_url, &contract_id, &environment, version, &created_by).await?;
             }
         },
+        Commands::VerifyFormal { contract_path, properties, output, post } => {
+            formal_verification::run(&cli.api_url, &contract_path, &properties, &output, post).await?;
+        },
         Commands::ScanDeps { contract_id, dependencies, fail_on_high } => {
             commands::scan_deps(&cli.api_url, &contract_id, &dependencies, fail_on_high).await?;
+        }
+        Commands::Coverage { contract_path, tests, threshold, output } => {
+            coverage::run(&contract_path, &tests, threshold, &output).await?;
         }
     }
 
